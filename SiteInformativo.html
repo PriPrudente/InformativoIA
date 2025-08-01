@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia Interativo: Cancelar Conta Itaú</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals & Subtle Orange -->
+    <!-- Application Structure Plan: A task-oriented, single-page application designed to guide the user through the process of canceling their bank account. The structure prioritizes the user's primary goal by first presenting the main methods (Online vs. In-Person) via interactive cards. Clicking a method dynamically displays the relevant steps, preventing information overload. This is followed by a crucial, non-interactive "Preparation Checklist" to ensure the user is ready. A comparative chart helps in decision-making, and an accordion organizes secondary "post-request" information. This structure was chosen over a linear report to create an actionable, user-centric tool that directly addresses the user's need to "do" something, making the process less daunting and more efficient. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Cancellation Methods -> Goal: Guide user choice -> Viz: Interactive Cards & Horizontal Bar Chart -> Interaction: Click to reveal details -> Justification: Cards offer a clear entry point, while the chart provides a quick visual summary of pros/cons, aiding decision-making -> Library: Chart.js.
+        - Report Info: Prerequisites -> Goal: Ensure user readiness -> Viz: Icon-based Checklist -> Interaction: None -> Justification: A checklist is an intuitive format for procedural steps, and icons enhance scannability -> Library: HTML/Tailwind with Unicode.
+        - Report Info: Post-request Process -> Goal: Manage expectations -> Viz: Accordion -> Interaction: Click to expand -> Justification: Hides detailed, secondary information, keeping the main interface clean and focused on the primary task -> Library: HTML/Tailwind/JS.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F9F9F7;
+            color: #333;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-button.active .accordion-arrow {
+            transform: rotate(180deg);
+        }
+        .method-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .method-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .method-card.active {
+            border-color: #FF7A00;
+            box-shadow: 0 0 0 2px #FF7A00;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <main class="container mx-auto px-4 py-8 md:py-12">
+
+        <header class="text-center mb-10 md:mb-16">
+            <h1 class="text-3xl md:text-5xl font-bold text-gray-800 mb-3">Guia para Cancelar sua Conta Itaú</h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">Mudou de estado e sua agência ficou longe? Sem problemas. Descubra como encerrar sua conta de forma simples e sem precisar ir até sua agência de origem.</p>
+        </header>
+
+        <section id="method-selection" class="mb-12">
+            <h2 class="text-2xl font-bold text-center mb-2 text-gray-800">Como você prefere cancelar?</h2>
+            <p class="text-center text-gray-500 mb-8">Escolha uma das opções abaixo para ver o passo a passo detalhado.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <div id="card-online" class="method-card cursor-pointer bg-white p-6 rounded-xl border-2 border-gray-200 text-center" onclick="selectMethod('online')">
+                    <div class="text-4xl mb-4">💻</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Cancelar Online</h3>
+                    <p class="text-gray-600">Use o app ou site do Itaú. A forma mais rápida e conveniente, sem sair de casa.</p>
+                </div>
+                <div id="card-presencial" class="method-card cursor-pointer bg-white p-6 rounded-xl border-2 border-gray-200 text-center" onclick="selectMethod('presencial')">
+                    <div class="text-4xl mb-4">🏢</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Cancelar em uma Agência</h3>
+                    <p class="text-gray-600">Vá a <span class="font-bold">qualquer</span> agência Itaú no país, não precisa ser a sua original.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="method-details" class="min-h-[300px] bg-white/50 p-6 md:p-8 rounded-2xl mb-12 max-w-4xl mx-auto hidden">
+        </section>
+
+        <section id="checklist" class="mb-12 md:mb-16">
+            <div class="max-w-4xl mx-auto bg-amber-50 border-l-4 border-amber-400 p-6 rounded-r-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Checklist Essencial: Antes de Começar</h2>
+                <p class="text-gray-700 mb-6">Para garantir que o processo de cancelamento ocorra sem problemas, é fundamental concluir estas três etapas primeiro. A não conclusão pode atrasar ou impedir o encerramento da sua conta.</p>
+                <ul class="space-y-4">
+                    <li class="flex items-start">
+                        <span class="text-green-600 text-2xl mr-4">✔</span>
+                        <div>
+                            <h4 class="font-bold text-gray-800">Zere o Saldo e Resgate Investimentos</h4>
+                            <p class="text-gray-600">Transfira todo o dinheiro para outra conta. O saldo deve ser R$ 0,00. Resgate também qualquer valor investido (CDB, poupança, fundos) vinculado à conta.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-green-600 text-2xl mr-4">✔</span>
+                        <div>
+                            <h4 class="font-bold text-gray-800">Quite Todas as Dívidas</h4>
+                            <p class="text-gray-600">Pague todas as pendências, como faturas de cartão de crédito, empréstimos, financiamentos ou tarifas em atraso. A conta não pode ser encerrada com débitos.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-green-600 text-2xl mr-4">✔</span>
+                        <div>
+                            <h4 class="font-bold text-gray-800">Cancele Serviços Vinculados</h4>
+                            <p class="text-gray-600">Cancele débitos automáticos, seguros, planos de capitalização e outros serviços associados. Verifique se não há pagamentos agendados para o futuro.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+        
+        <section id="comparison" class="mb-12 md:mb-16">
+             <h2 class="text-2xl font-bold text-center mb-2 text-gray-800">Comparando os Métodos</h2>
+             <p class="text-center text-gray-500 mb-8 max-w-2xl mx-auto">Não tem certeza de qual caminho seguir? Este gráfico resume as principais vantagens de cada método para te ajudar a decidir. A avaliação considera a perspectiva de quem não pode ir à agência de origem.</p>
+            <div class="chart-container">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </section>
+
+        <section id="faq" class="max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold text-center mb-8 text-gray-800">O Que Acontece Depois da Solicitação?</h2>
+            <div class="space-y-4">
+                <div class="accordion-item bg-white rounded-lg border border-gray-200">
+                    <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-gray-700" onclick="toggleAccordion(this)">
+                        <span>Qual o prazo para o encerramento ser efetivado?</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-5 pt-0 text-gray-600">
+                            <p>O encerramento pode ser imediato se não houver nenhuma pendência. Caso existam produtos vinculados (como um cartão de crédito ainda ativo), a conta entra em "Regime de Encerramento" e o prazo para a conclusão final é de até 30 dias. Durante esse período, o banco realiza a desvinculação de todos os serviços.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item bg-white rounded-lg border border-gray-200">
+                    <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-gray-700" onclick="toggleAccordion(this)">
+                        <span>Ainda serei cobrado por tarifas de manutenção?</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-5 pt-0 text-gray-600">
+                            <p>Não. A partir do momento em que você formaliza o pedido de encerramento, o Itaú não pode mais cobrar novas tarifas de manutenção de conta. No entanto, lembre-se que dívidas e tarifas que já existiam antes da solicitação ainda precisam ser pagas.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item bg-white rounded-lg border border-gray-200">
+                    <button class="accordion-button w-full flex justify-between items-center p-5 text-left font-semibold text-gray-700" onclick="toggleAccordion(this)">
+                        <span>Preciso guardar algum comprovante?</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-5 pt-0 text-gray-600">
+                            <p>Sim, é altamente recomendável. Guarde o protocolo de solicitação (seja online ou o documento físico da agência) e a confirmação de encerramento. Esse comprovante é sua garantia de que a conta foi devidamente encerrada e pode ser útil para resolver qualquer questão futura.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center mt-16 pt-8 border-t border-gray-200">
+            <p class="text-gray-500">Este é um guia interativo baseado em informações públicas. Em caso de dúvidas, contate os canais oficiais do Itaú.</p>
+            <p class="text-gray-500 mt-1">Central de Atendimento: 4004 4828 (Capitais) ou 0800 970 4828 (Demais localidades).</p>
+        </footer>
+
+    </main>
+
+    <script>
+        const methodDetailsContent = {
+            online: `
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Passo a Passo: Cancelamento Online</h3>
+                <p class="text-gray-600 mb-6">O processo pode ser feito tanto pelo aplicativo principal do Itaú quanto pelo site (Internet Banking). Os passos são similares e projetados para serem intuitivos.</p>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold text-gray-700">1. Acesse sua conta</h4>
+                        <p class="text-gray-600">Faça login no App Itaú ou no site com sua agência, conta e senha eletrônica.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-700">2. Encontre a opção de encerramento</h4>
+                        <p class="text-gray-600">No menu, procure por uma rota como: <span class="font-mono bg-gray-100 p-1 rounded">seu nome > mais opções > informações da conta > encerrar conta</span> ou <span class="font-mono bg-gray-100 p-1 rounded">menu > conta corrente > encerramento de conta</span>.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-700">3. Siga as instruções</h4>
+                        <p class="text-gray-600">O sistema pedirá para você confirmar a decisão e informar o motivo. Siga todas as etapas até receber a confirmação da solicitação.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-700">Nota sobre Contas Digitais (iti)</h4>
+                        <p class="text-gray-600">Se sua conta for a digital <span class="font-bold">iti</span>, o processo é ainda mais simples: no app iti, vá em <span class="font-mono bg-gray-100 p-1 rounded">acessar perfil > excluir cadastro</span> e siga as instruções.</p>
+                    </div>
+                </div>
+            `,
+            presencial: `
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Passo a Passo: Cancelamento em Qualquer Agência</h3>
+                 <p class="text-gray-600 mb-6">Se preferir o atendimento presencial ou se o método online não estiver disponível para sua conta, você pode ir a qualquer agência do Itaú no Brasil. A flexibilidade de poder escolher a agência mais próxima é a grande vantagem deste método.</p>
+                <div>
+                    <h4 class="font-semibold text-gray-700 mb-3">Documentos Necessários:</h4>
+                    <ul class="list-disc list-inside text-gray-600 space-y-2">
+                        <li>Documento de identificação com foto (RG, CNH, etc.).</li>
+                        <li>CPF.</li>
+                        <li>Cartão de débito ou múltiplo da conta.</li>
+                        <li>Talões de cheque e cartões não utilizados (se houver, para destruição).</li>
+                    </ul>
+                </div>
+                <div class="mt-4">
+                     <h4 class="font-semibold text-gray-700">Procedimento na Agência:</h4>
+                     <p class="text-gray-600">Informe ao gerente que você deseja encerrar sua conta. Ele irá verificar se os pré-requisitos (saldo zerado, sem dívidas) foram cumpridos e formalizará o seu pedido, entregando um comprovante. </p>
+                </div>
+            `
+        };
+
+        const detailsContainer = document.getElementById('method-details');
+        const cardOnline = document.getElementById('card-online');
+        const cardPresencial = document.getElementById('card-presencial');
+
+        function selectMethod(method) {
+            detailsContainer.innerHTML = methodDetailsContent[method];
+            detailsContainer.classList.remove('hidden');
+
+            if (method === 'online') {
+                cardOnline.classList.add('active');
+                cardPresencial.classList.remove('active');
+            } else {
+                cardPresencial.classList.add('active');
+                cardOnline.classList.remove('active');
+            }
+            
+            setTimeout(() => {
+                detailsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        function toggleAccordion(button) {
+            const content = button.nextElementSibling;
+            button.classList.toggle('active');
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        }
+        
+        const ctx = document.getElementById('comparisonChart').getContext('2d');
+        const comparisonChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Conveniência (sem sair de casa)', 'Flexibilidade de Local', 'Velocidade (potencial)', 'Necessidade de Documentos Físicos'],
+                datasets: [{
+                    label: 'Online',
+                    data: [9.5, 5, 8, 1],
+                    backgroundColor: 'rgba(255, 122, 0, 0.7)',
+                    borderColor: 'rgba(255, 122, 0, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Em Agência',
+                    data: [3, 9, 7, 9],
+                    backgroundColor: 'rgba(0, 83, 160, 0.7)',
+                    borderColor: 'rgba(0, 83, 160, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 10,
+                        title: {
+                            display: true,
+                            text: 'Avaliação (0 = Baixo, 10 = Alto)'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                             autoSkip: false,
+                             maxRotation: 0,
+                             minRotation: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.x !== null) {
+                                    label += context.parsed.x + ' / 10';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
